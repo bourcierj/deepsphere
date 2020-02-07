@@ -6,6 +6,8 @@ import healpy as hp
 class SphereHealpix():
     """
     Sphere tessellated with Healpix sampling.
+    The graph is a "skeleton" that does not actually contain any data. Inteneed to be used
+    with PyTorch Geometric.
     Args:
         nside (int):
             The healpix nside parameter, must be a power of 2, less than 2**30.
@@ -16,6 +18,12 @@ class SphereHealpix():
             Weighting scheme for edges
         dtype (data-type, optional):
             The desired data type of the weight matrix.
+    Attrs:
+        edge_index (torch.LongTensor):
+            Matrix of graph edges in COO format, compliant with PyTorch Geometric
+        edge_weight (torch.FloatTensor):
+            Matrix of edge weights, each row contains values (edge_id, weight), compliant
+            with PyTorch Geometric
     """
     import healpy as hp
     def __init__(self, nside=16, indexes=None, similarity='perraudin', dtype=np.float32, **kwargs):
@@ -80,6 +88,8 @@ class SphereHealpix():
 class SphereEquiangular():
     """
     Sphere tessellated with Equiangular sampling.
+    The graph is a "skeleton" that does not actually contain any data. Inteneed to be used
+    with PyTorch Geometric.
     Args:
         bw (int):
             bandwidth, size of grid  (default = 64)
@@ -92,6 +102,12 @@ class SphereEquiangular():
             Number of neighbors for building the graph (4 or 8)
         dtype (data-type, optional):
             The desired data type of the weight matrix.
+    Attrs:
+        edge_index (torch.LongTensor):
+            Matrix of graph edges in COO format, compliant with PyTorch Geometric
+        edge_weight (torch.FloatTensor):
+            Matrix of edge weights, each row contains values (edge_id, weight), compliant
+            with PyTorch Geometric
     """
     def __init__(self, bw=64, indexes=None, similarity='renata', n_neighbors=8, dtype=np.float32, **kwargs):
         assert(similarity in {'perraudin', 'renata'})
@@ -175,6 +191,8 @@ class SphereEquiangular():
 class SphereIcosahedral():
     """
     Sphere tessellated with Icosahedral sampling
+    The graph is a "skeleton" that does not actually contain any data. Inteneed to be used
+    with PyTorch Geometric.
     Note: The sampled points are positioned on the vertices.
     Args:
         level (int):
@@ -188,6 +206,12 @@ class SphereIcosahedral():
             Weighting scheme for edges
         dtype (data-type, optional):
             The desired data type of the weight matrix.
+    Attrs:
+        edge_index (torch.LongTensor):
+            Matrix of graph edges in COO format, compliant with PyTorch Geometric
+        edge_weight (torch.FloatTensor):
+            Matrix of edge weights, each row contains values (edge_id, weight), compliant
+            with PyTorch Geometric
     """
     def __init__(self, level, indexes=None, similarity='perraudin', dtype=np.float32, **kwargs):
         if indexes is not None:
