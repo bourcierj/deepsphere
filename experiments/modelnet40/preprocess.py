@@ -6,8 +6,10 @@ from tqdm import tqdm
 from time import time
 
 if __name__ == '__main__':
+
+    root = './data/ModelNet40'
     # Process training set
-    train_set = ModelNet40Dataset('./data/ModelNet40', 'train', nside=32, nfeat=6,
+    train_set = ModelNet40Dataset(root, 'train', nside=32, nfeat=6,
                                   cache=True, verbose=False)
 
     def my_collate(batch):
@@ -43,7 +45,7 @@ if __name__ == '__main__':
         pass
 
     # Process testing set
-    test_set = ModelNet40Dataset('./data/ModelNet40', 'test', nside=32, nfeat=6,
+    test_set = ModelNet40Dataset(root, 'test', nside=32, nfeat=6,
                                  cache=True, verbose=False)
 
     test_loader = DataLoader(test_set, batch_size=4, shuffle=False,

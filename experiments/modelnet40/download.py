@@ -9,7 +9,7 @@ import argparse
 
 def parse_arguments():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--data-path', type=str, default='../../data/')
+    parser.add_argument('--data-path', type=str, default='./data/')
     return parser.parse_args()
 
 def _check_exists(path):
