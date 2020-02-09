@@ -46,6 +46,7 @@ class SphereHealpix():
         x, y, z = hp.pix2vec(nside, indexes)
         coords = np.vstack([x, y, z]).transpose()
         coords = np.asarray(coords, dtype=dtype)
+        self.coords = coords
         # Get the 7-8 neighbors
         neighbors = hp.pixelfunc.get_all_neighbours(nside, indexes)
         # Indices of non-zero values in the adjacency matrix
@@ -130,6 +131,7 @@ class SphereEquiangular():
         z = ct
         coords = np.vstack([x.flatten(), y.flatten(), z.flatten()]).transpose()
         coords = np.asarray(coords, dtype=dtype)
+        self.coords = coords
         npix = len(coords)  # number of pixels
         self.npix = npix
 
