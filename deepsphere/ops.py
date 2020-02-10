@@ -140,7 +140,7 @@ class CachedChebConv(MessagePassing):
 def max_pool(x, p, sampling='healpix', ratio=1.):
     """Maximum pooling of a spherical signal with hierarchichal sampling.
     Args:
-        x (tensor): tensor of shape (batch?, n_samples, n_features)
+        x (tensor): tensor of shape (batch, n_pixels, n_features)
         p (int): the pooling size or down-sampling factor (power of 2)
         sampling (str): the sampling scheme
     """
@@ -149,9 +149,9 @@ def max_pool(x, p, sampling='healpix', ratio=1.):
         if sampling is 'equiangular':
             assert(len(x.size()) == 3)
             x = x.transpose(1, 2)  # channels first for compatibility with F.max_pool*
-            batch_size, n_feats, n_points = x.size()
-            x = x.view(batch_size, n_feats, int((n_points/ratio)**0.5),
-                       int((n_points/ratio)**0.5))
+            batch_size, n_feats, npix = x.size()
+            x = x.view(batch_size, n_feats, int((npix/ratio)**0.5),
+                       int((npix/ratio)**0.5))
             #@TODO: apply 'same' padding
             x = F.max_pool2d(x, kernel_size=(p**0.5, p**0.5), stride=(p**0.5,p**0.5))
             x = x.view(batch_size, n_feats, -1)
@@ -172,12 +172,33 @@ class MaxPool(nn.Module):
     """Maximum pooling module wrapper"""
 
     def __init__(self, p, sampling='healpix', ratio=1.):
+        super(MaxPool, self).__init__()
         self.p = p
         self.sampling = sampling
         self.ratio = ratio
 
     def forward(self, x):
         return max_pool(x, self.p, self.sampling, self.ratio)
+
+
+def global_avg_pool(x):
+    """Global average pooling (GAP).
+    Args:
+        x (tensor): tensor of shape (batch, n_pixels, n_features)
+    """
+    x = x.transpose(1, 2)
+    x = F.adaptive_avg_pool1d(x, output_size=1)
+    return x.transpose(2, 1)
+
+
+class GlobalAvgPool(nn.Module):
+    """Global average pooling module wrapper"""
+
+    def __init__(self):
+        super(GlobalAvgPool, self).__init__()
+
+    def forward(self, x):
+        return global_avg_pool(x)
 
 
 def get_pooling_sizes(sparams, sampling='healpix'):
@@ -199,7 +220,8 @@ def get_pooling_sizes(sparams, sampling='healpix'):
 
 if __name__ == '__main__':
 
-    # Test pooling on five sampling levels: ok
+    # Test max pooling on five sampling levels: ok
+    print('Test Max pool')
     nsides = [32, 16, 8, 4, 2]
     pooling_sizes = [(nsides[i] // nsides[i+1])**2 for i in range(len(nsides)-1)]
     nside = 32
@@ -212,3 +234,10 @@ if __name__ == '__main__':
         print('p: {}, output shape: {}'.format(p, tuple(out.shape)))
         new_npix = 12 * (nside//2) **2
         assert(out.shape == (16, new_npix, 6))
+
+    # Test global avg pooling: ok
+    print('Test Global avg pool')
+    npix = 48
+    input_x = torch.randn(16, npix, 6)  # random examples minimatch
+    out = global_avg_pool(input_x)
+    print('output shape: {}'.format(tuple(out.shape)))
