@@ -1,5 +1,8 @@
 
 import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
 from torch.nn import Parameter
 from torch_geometric.nn.conv import MessagePassing
 from torch_geometric.utils import remove_self_loops, add_self_loops
@@ -67,13 +70,13 @@ class CachedChebConv(MessagePassing):
         else:
             self.register_parameter('bias', None)
 
-        if self.normalization != get_laplacian'sym' and lambda_max is None:
+        if self.normalization != 'sym' and lambda_max is None:
             raise ValueError('You need to pass `lambda_max` to `forward() in`'
                              'case the normalization is non-symmetric.')
         lambda_max = 2.0 if lambda_max is None else lambda_max
 
         self.edge_index, self.norm_value = self.norm(
-            graph_data.edge_index, x_size, graph_data.edge_weight,
+            graph_data.edge_index, x_size, graph_data.edge_attr,
             self.normalization, lambda_max, dtype=dtype, batch=batch
         )
         self.reset_parameters()
@@ -134,25 +137,6 @@ class CachedChebConv(MessagePassing):
             self.weight.size(0), self.normalization)
 
 
-def pool_max(self, x, p):
-    """Max pooling of size p. Should be a power of 2."""
-    if p > 1:
-        if self.sampling is 'equiangular':
-            N, M, F = x.get_shape()
-            N, M, F = int(N), int(M), int(F)
-            x = tf.reshape(x,[N,int((M/self.ratio)**0.5), int((M*self.ratio)**0.5), F])
-            x = tf.nn.max_pool(x, ksize=[1,p**0.5,p**0.5,1], strides=[1,p**0.5,p**0.5,1], padding='SAME')
-            return tf.reshape(x, [N, -1, F])
-        elif self.sampling  is 'icosahedron':
-            return x[:, :p, :]
-        else:
-            x = tf.expand_dims(x, 3)  # N x M x F x 1
-            x = tf.nn.max_pool(x, ksize=[1,p,1,1], strides=[1,p,1,1], padding='SAME')
-            return tf.squeeze(x, [3])  # N x M/p x F
-    else:
-        return x
-
-
 def max_pool(x, p, sampling='healpix', ratio=1.):
     """Maximum pooling of a spherical signal with hierarchichal sampling.
     Args:
@@ -196,11 +180,35 @@ class MaxPool(nn.Module):
         return max_pool(x, self.p, self.sampling, self.ratio)
 
 
+def get_pooling_sizes(sparams, sampling='healpix'):
+    pool_sizes = []
+    sp_last = -1
+    if sampling != 'icosahedral':
+        for i, (sp, index) in enumerate(zip(sparams, indexes)):
+                if isinstance(sp, tuple):
+                    sp = sp[0]
+                if i > 0:
+                    pool_sizes.append((sp_last // sp)**2)
+                sp_last = sp
+    if sampling == 'icosahedron':
+        for nv in sparams[1:]:  # levels
+            pool_sizes.append(10 * 4**order + 2)  # number of vertices for level
+    else:
+        raise ValueError('Unsupported sampling: {}'.format(sampling))
+
+
 if __name__ == '__main__':
 
+    # Test pooling on five sampling levels: ok
+    nsides = [32, 16, 8, 4, 2]
+    pooling_sizes = [(nsides[i] // nsides[i+1])**2 for i in range(len(nsides)-1)]
     nside = 32
     npix = 12 * nside**2
-    x = torch.randn(4, npix, 6)
-    # p = ?? # pooling size
-    output = max_pool(x, p, sampling='healpix')
-    print(output.shape)
+    input_x = torch.randn(16, npix, 6)  # random examples minimatch
+    out = input_x
+    for nside, p in zip(nsides, pooling_sizes):
+        assert(p == 4)
+        out = max_pool(out, p, sampling='healpix')
+        print('p: {}, output shape: {}'.format(p, tuple(out.shape)))
+        new_npix = 12 * (nside//2) **2
+        assert(out.shape == (16, new_npix, 6))
