@@ -15,7 +15,6 @@ from itertools import zip_longest
 import numpy as np
 import trimesh
 import healpy as hp
-import torch
 
 
 def rotmat(a, b, c, hom_coord=False):
@@ -250,10 +249,15 @@ def Transform(path, nside=32, rot=False, verbose=True):
 
 
 class ModelNet40Dataset(Dataset):
-
+    """
+    The ModelNet40 Dataset: https://modelnet.cs.princeton.edu/
+    Allows preprocessing the OFF files and caching processed data in Numpy arrays
+    for faster loading.
+    This class is intented to be wrapped by a Torch Geometric Dataset.
+    """
     def __init__(self, root='./data/ModelNet40', role='train', nside=32, nfeat=6,
                  nfile=None, experiment='deepsphere__healpix_nside_32',
-                 fix=False, transform=None, cache=True, verbose=True):
+                 fix=False, cache=True, verbose=True):
         self.experiment = experiment
         self.nside = nside
         self.nfeat = nfeat
@@ -299,7 +303,6 @@ class ModelNet40Dataset(Dataset):
         if fix:
             self._fix()
 
-        self.transform = transform
         self.cache = cache
         # boolean list of flags indicating if files have been cached
         self.is_cached = self._init_cached_flags()
@@ -382,23 +385,6 @@ class ModelNet40Dataset(Dataset):
 
     def __len__(self):
         return len(self.files)
-
-
-# class ModelNet40GraphDataset(GraphDataset):
-
-#     def __init__(self):
-#         pass
-
-#     def __getitem__(self):
-#         pass
-
-#     def __len__(self):
-#         pass
-
-
-def get_dataloaders():
-    #@TODO
-    pass
 
 
 if __name__ == '__main__':
