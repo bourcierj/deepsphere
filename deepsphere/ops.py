@@ -133,3 +133,74 @@ class CachedChebConv(MessagePassing):
             self.__class__.__name__, self.in_channels, self.out_channels,
             self.weight.size(0), self.normalization)
 
+
+def pool_max(self, x, p):
+    """Max pooling of size p. Should be a power of 2."""
+    if p > 1:
+        if self.sampling is 'equiangular':
+            N, M, F = x.get_shape()
+            N, M, F = int(N), int(M), int(F)
+            x = tf.reshape(x,[N,int((M/self.ratio)**0.5), int((M*self.ratio)**0.5), F])
+            x = tf.nn.max_pool(x, ksize=[1,p**0.5,p**0.5,1], strides=[1,p**0.5,p**0.5,1], padding='SAME')
+            return tf.reshape(x, [N, -1, F])
+        elif self.sampling  is 'icosahedron':
+            return x[:, :p, :]
+        else:
+            x = tf.expand_dims(x, 3)  # N x M x F x 1
+            x = tf.nn.max_pool(x, ksize=[1,p,1,1], strides=[1,p,1,1], padding='SAME')
+            return tf.squeeze(x, [3])  # N x M/p x F
+    else:
+        return x
+
+
+def max_pool(x, p, sampling='healpix', ratio=1.):
+    """Maximum pooling of a spherical signal with hierarchichal sampling.
+    Args:
+        x (tensor): tensor of shape (batch?, n_samples, n_features)
+        p (int): the pooling size or down-sampling factor (power of 2)
+        sampling (str): the sampling scheme
+    """
+    if p > 1:
+        #@TODO: WORKS ONLY ON TENSOR BATCHES? And PyTorch Geometric?
+        if sampling is 'equiangular':
+            assert(len(x.size()) == 3)
+            x = x.transpose(1, 2)  # channels first for compatibility with F.max_pool*
+            batch_size, n_feats, n_points = x.size()
+            x = x.view(batch_size, n_feats, int((n_points/ratio)**0.5),
+                       int((n_points/ratio)**0.5))
+            #@TODO: apply 'same' padding
+            x = F.max_pool2d(x, kernel_size=(p**0.5, p**0.5), stride=(p**0.5,p**0.5))
+            x = x.view(batch_size, n_feats, -1)
+            x = x.transpose(2, 1)
+
+        if sampling is 'healpix':
+            x = x.transpose(1, 2) # channels first for compatibility with F.max_pool*
+            #@TODO: apply 'same' padding
+            x = F.max_pool1d(x, kernel_size=p, stride=p)
+            x = x.transpose(2, 1)
+
+        if sampling is 'icosahedral':
+            return x[:, :p, :]
+    return x
+
+
+class MaxPool(nn.Module):
+    """Maximum pooling module wrapper"""
+
+    def __init__(self, p, sampling='healpix', ratio=1.):
+        self.p = p
+        self.sampling = sampling
+        self.ratio = ratio
+
+    def forward(self, x):
+        return max_pool(x, self.p, self.sampling, self.ratio)
+
+
+if __name__ == '__main__':
+
+    nside = 32
+    npix = 12 * nside**2
+    x = torch.randn(4, npix, 6)
+    # p = ?? # pooling size
+    output = max_pool(x, p, sampling='healpix')
+    print(output.shape)
