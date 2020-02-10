@@ -1,27 +1,3 @@
-"""
-Original file:
-https://github.com/rusty1s/pytorch_geometric/blob/751555b15c04e836d1ff77c96a3212aea20cc42d/torch_geometric/nn/conv/cheb_conv.py
-
-Copyright (c) 2020 Matthias Fey <matthias.fey@tu-dortmund.de>
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
-"""
 
 import torch
 from torch.nn import Parameter
@@ -31,28 +7,16 @@ from torch_geometric.utils import get_laplacian
 from torch_geometric.nn.inits import glorot, zeros
 
 class CachedChebConv(MessagePassing):
-    r"""The chebyshev spectral graph convolutional operator from the
+    r"""
+    The chebyshev spectral graph convolutional operator from the
     `"Convolutional Neural Networks on Graphs with Fast Localized Spectral
     Filtering" <https://arxiv.org/abs/1606.09375>`_ paper, with some modifications
-    from the original torch_geometric implementation.
-
-    .. math::
-        \mathbf{X}^{\prime} = \sum_{k=0}^{K-1} \mathbf{Z}^{(k)} \cdot
-        \mathbf{\Theta}^{(k)}
-
-    where :math:`\mathbf{Z}^{(k)}` is computed recursively by
-
-    .. math::
-        \mathbf{Z}^{(0)} &= \mathbf{X}
-
-        \mathbf{Z}^{(1)} &= \mathbf{\hat{L}} \cdot \mathbf{X}
-
-        \mathbf{Z}^{(k)} &= 2 \cdot \mathbf{\hat{L}} \cdot
-        \mathbf{Z}^{(k-1)} - \mathbf{Z}^{(k-2)}
-
-    and :math:`\mathbf{\hat{L}}` denotes the scaled and normalized Laplacian
-    :math:`\frac{2\mathbf{L}}{\lambda_{\max}} - \mathbf{I}`.
-
+    from the original PyTorch Geometric implementation.
+    Original:
+    https://github.com/rusty1s/pytorch_geometric/blob/751555b15c04e836d1ff77c96a3212aea20cc42d/torch_geometric/nn/conv/cheb_conv.py
+    Copyright (c) 2020 Matthias Fey <matthias.fey@tu-dortmund.de>
+    This is intended to be used with the same graph structure and computes the
+    Laplacian only once.
     Args:
         in_channels (int): Size of each input sample.
         out_channels (int): Size of each output sample.
@@ -103,7 +67,7 @@ class CachedChebConv(MessagePassing):
         else:
             self.register_parameter('bias', None)
 
-        if self.normalization != 'sym' and lambda_max is None:
+        if self.normalization != get_laplacian'sym' and lambda_max is None:
             raise ValueError('You need to pass `lambda_max` to `forward() in`'
                              'case the normalization is non-symmetric.')
         lambda_max = 2.0 if lambda_max is None else lambda_max
@@ -168,3 +132,4 @@ class CachedChebConv(MessagePassing):
         return '{}({}, {}, K={}, normalization={})'.format(
             self.__class__.__name__, self.in_channels, self.out_channels,
             self.weight.size(0), self.normalization)
+
